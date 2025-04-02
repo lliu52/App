@@ -4,14 +4,15 @@ on:
   push:
     branches:
       - main  # adjust as needed
+  pull_request:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Setup .NET SDK
       uses: actions/setup-dotnet@v4
@@ -19,10 +20,10 @@ jobs:
         dotnet-version: '6.0.x'  # change if you're using .NET 7/8
 
     - name: Restore dependencies
-      run: dotnet restore App.sln
+      run: dotnet restore App/App.csproj
 
     - name: Build the app
-      run: dotnet build App.sln --configuration Release --no-restore
+      run: dotnet build App/App.csproj --configuration Release --no-restore
 
     - name: Create build tag with current date
       run: |
