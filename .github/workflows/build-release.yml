@@ -18,19 +18,19 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '6.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore app/app.csproj
+        run: dotnet restore App/App.csproj
 
       - name: Build
-        run: dotnet build app/app.csproj --no-restore --configuration Release
+        run: dotnet build App/App.csproj --no-restore --configuration Release
 
       - name: Test
-        run: dotnet test app/app.csproj --no-build --configuration Release
+        run: dotnet test App/App.csproj --no-build --configuration Release
 
       - name: Publish App
-        run: dotnet publish app/app.csproj --configuration Release --output ./publish
+        run: dotnet publish App/App.csproj --configuration Release --output ./publish
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
