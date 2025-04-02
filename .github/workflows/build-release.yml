@@ -37,46 +37,39 @@ jobs:
         with:
           name: published-app
           path: ./publish
-
   release:
     needs: build
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-
+  
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
+  
       - name: Download Artifact
         uses: actions/download-artifact@v4
         with:
           name: published-app
           path: ./publish
-
-      - name: Get current date
-        id: date
-        run: echo "date=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_OUTPUT
-
+  
+      - name: Get current datetime tag
+        id: tag
+        run: echo "tag=v$(date +'%Y%m%d%H%M%S')" >> $GITHUB_OUTPUT
+  
       - name: Create Git Tag
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag v${{ steps.date.outputs.date }}
-          git push origin v${{ steps.date.outputs.date }}
+          git tag ${{ steps.tag.outputs.tag }}
+          git push origin ${{ steps.tag.outputs.tag }}
   
-      - name: Create Release
+      - name: Create GitHub Release and Upload Assets
         uses: softprops/action-gh-release@v2
         with:
-          name: Release ${{ steps.date.outputs.date }}
-          tag_name: v${{ steps.date.outputs.date }}
-          body: "Automated release from CI"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  
-      - name: Upload Release Asset
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.date.outputs.date }}
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: Release ${{ steps.tag.outputs.tag }}
+          body: "Automated release from GitHub Actions"
           files: ./publish/**
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  
