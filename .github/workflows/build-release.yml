@@ -1,75 +1,39 @@
-name: Build and Release
+name: Build and Push Docker Image
 
 on:
   push:
     branches:
       - main
-  pull_request:
-
-permissions:
-  contents: write  # Required for creating GitHub Releases
 
 jobs:
-  build:
+  build-and-dockerize:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '6.0.x'
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '6.0.x'
 
-      - name: Restore dependencies
-        run: dotnet restore App/App.csproj
+    - name: Restore dependencies
+      run: dotnet restore
 
-      - name: Build
-        run: dotnet build App/App.csproj --no-restore --configuration Release
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
 
-      - name: Test
-        run: dotnet test App/App.csproj --no-build --configuration Release
+    - name: Publish app
+      run: dotnet publish --configuration Release --output ./output
 
-      - name: Publish App
-        run: dotnet publish App/App.csproj --configuration Release --output ./publish
+    - name: Log in to DockerHub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: published-app
-          path: ./publish
-  release:
-    needs: build
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-  
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-  
-      - name: Download Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: published-app
-          path: ./publish
-  
-      - name: Get current datetime tag
-        id: tag
-        run: echo "tag=v$(date +'%Y%m%d%H%M%S')" >> $GITHUB_OUTPUT
-  
-      - name: Create Git Tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag ${{ steps.tag.outputs.tag }}
-          git push origin ${{ steps.tag.outputs.tag }}
-  
-      - name: Create GitHub Release and Upload Assets
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.tag.outputs.tag }}
-          name: Release ${{ steps.tag.outputs.tag }}
-          body: "Automated release from GitHub Actions"
-          files: ./publish/**
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  
+    - name: Build and push Docker image
+      run: |
+        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/mvc-app:1.0.0 .
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/mvc-app:1.0.0
